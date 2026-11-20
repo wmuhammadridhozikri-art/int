@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Kelola Image Slider - IMT Trade &amp; Investment Fair</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #071f4a;
+            --gold: #d9b865;
+            --gold-bright: #f0d98f;
+            --gold-line: rgba(217, 184, 101, .30);
+            --ivory: #f6f1e4;
+            --mist: #b4c2de;
+            --danger: #ff8d8d;
+            --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+            --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            font-family: var(--font-body);
+            line-height: 1.5;
+            color: var(--ivory);
+            background: radial-gradient(ellipse 80% 55% at 50% 0%, #003a78 0%, rgba(0, 58, 120, 0) 75%), #00224d;
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrap { width: min(1040px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 80px; }
+
+        h1 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 500; }
+        .sub { margin-top: 6px; color: var(--mist); font-size: .9375rem; max-width: 70ch; }
+
+        .toolbar {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            margin: 24px 0 18px; padding: 12px;
+            background: rgba(3, 16, 42, .86);
+            -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+            border: 1px solid var(--gold-line); border-top: 2px solid var(--gold);
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 16px; min-height: 40px;
+            border: 1px solid var(--gold); background: transparent;
+            color: var(--gold-bright); font: 600 .875rem var(--font-body);
+            cursor: pointer; transition: background-color .2s, color .2s;
+        }
+        .btn:hover { background: var(--gold); color: var(--navy); }
+        .btn.primary { background: var(--gold); color: var(--navy); }
+        .btn.primary:hover { background: var(--gold-bright); }
+        .btn.small { min-height: 34px; padding: 6px 12px; font-size: .8125rem; }
+        .btn.danger { border-color: var(--danger); color: var(--danger); }
+        .btn.danger:hover { background: var(--danger); color: var(--navy); }
+        .btn:disabled { opacity: .35; cursor: not-allowed; }
+        .btn:disabled:hover { background: transparent; color: var(--gold-bright); }
+        .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--gold-bright); outline-offset: 2px;
+        }
+
+        .grow { flex: 1; }
+        .interval { display: flex; align-items: center; gap: 8px; color: var(--mist); font-size: .875rem; }
+        .interval input { width: 72px; }
+
+        input[type="text"], input[type="number"], input[type="url"], select, textarea {
+            width: 100%; padding: 9px 11px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid var(--gold-line);
+            color: var(--ivory); font: 400 .9375rem var(--font-body);
+        }
+        input[type="number"] { width: 72px; }
+        select option { color: #000; }
+        textarea { resize: vertical; min-height: 64px; }
+        label { display: block; font-size: .75rem; color: var(--mist); margin-bottom: 4px; letter-spacing: .03em; }
+
+        .drop {
+            display: grid; place-items: center; gap: 4px; text-align: center;
+            padding: 26px 16px; margin-bottom: 18px;
+            border: 1px dashed var(--gold); color: var(--mist);
+            background: rgba(217, 184, 101, .04);
+            cursor: pointer;
+        }
+        .drop.over { background: rgba(217, 184, 101, .14); color: var(--ivory); }
+        .drop strong { color: var(--gold-bright); font-weight: 600; }
+
+        .list { display: grid; gap: 14px; list-style: none; }
+
+        .card {
+            display: grid; grid-template-columns: 24px 220px 1fr; gap: 16px;
+            padding: 14px;
+            background: linear-gradient(160deg, rgba(10, 38, 88, .55), rgba(3, 16, 42, .7));
+            border: 1px solid var(--gold-line);
+        }
+        .card.dragging { opacity: .4; }
+        .card.drop-target { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright); }
+
+        .handle { color: var(--gold); cursor: grab; text-align: center; font-size: 1.25rem; user-select: none; padding-top: 4px; }
+        .handle .no { display: block; font: 600 .8125rem var(--font-display); color: var(--mist); margin-top: 6px; }
+
+        .thumb {
+            position: relative; aspect-ratio: 16 / 9; overflow: hidden;
+            background: #03102a; border: 1px solid var(--gold-line);
+        }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .thumb .tag {
+            position: absolute; left: 6px; top: 6px; padding: 2px 8px;
+            font-size: .6875rem; font-weight: 600; background: var(--gold); color: var(--navy);
+        }
+
+        .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+        .fields .full { grid-column: 1 / -1; }
+
+        .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+
+        .note { margin-top: 28px; padding: 16px; border: 1px solid var(--gold-line); color: var(--mist); font-size: .875rem; }
+        .note h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.125rem; color: var(--ivory); margin-bottom: 8px; }
+        .note ol { padding-left: 20px; display: grid; gap: 4px; }
+        .note code { color: var(--gold-bright); }
+
+        .empty { padding: 32px; text-align: center; color: var(--mist); border: 1px solid var(--gold-line); }
+
+        .toast {
+            position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+            padding: 10px 18px; background: var(--gold); color: var(--navy); font-weight: 600; font-size: .875rem;
+            opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 20;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        @media (max-width: 760px) {
+            .card { grid-template-columns: 1fr; }
+            .handle { display: none; }
+            .fields { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Kelola Image Slider</h1>
+    <p class="sub">Tambah banyak foto sekaligus, ubah judul/deskripsi/tombol, atur urutan, ganti atau hapus. Foto dioptimalkan otomatis (maks. 1920 px, WebP). Setelah selesai, unduh paket ZIP lalu salin isinya ke folder proyek.</p>
+
+    <div class="toolbar">
+        <button class="btn primary" id="btn-add" type="button">+ Tambah Foto</button>
+        <label class="interval" style="margin:0">Jeda (detik)
+            <input type="number" id="interval" min="2" max="30" step="0.5" value="4.5">
+        </label>
+        <span class="grow"></span>
+        <button class="btn" id="btn-js" type="button">Unduh slides.js</button>
+        <button class="btn primary" id="btn-zip" type="button">Unduh Paket ZIP</button>
+    </div>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Pilih atau seret foto ke sini">
+        <div><strong>Klik untuk memilih foto</strong> atau seret beberapa foto ke sini</div>
+        <div>Format: JPG, JPEG, PNG, WEBP</div>
+    </div>
+    <input type="file" id="file-add" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple hidden>
+    <input type="file" id="file-replace" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden>
+
+    <ul class="list" id="list"></ul>
+
+    <div class="note">
+        <h2>Cara menerapkan perubahan</h2>
+        <ol>
+            <li>Klik <strong>Unduh Paket ZIP</strong>.</li>
+            <li>Ekstrak ZIP, lalu salin folder <code>assets</code> ke folder proyek website (timpa <code>assets/slider/slides.js</code>).</li>
+            <li>Upload ulang ke hosting. Slider di halaman utama langsung memakai data baru.</li>
+        </ol>
+        <p style="margin-top:8px">Foto lama yang dihapus/diganti tidak ikut terhapus otomatis dari folder <code>assets/slider/</code>; hapus manual jika ingin menghemat ruang. Buka halaman ini dari website yang sudah berjalan (satu folder dengan <code>index.html</code>) agar slide yang sudah ada ikut termuat.</p>
+    </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Muat data slide yang sudah ada -->
+<script src="assets/slider/slides.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var MAX_WIDTH = 1920;
+    var QUALITY = 0.82;
+    var OK_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    var OK_EXT = /\.(jpe?g|png|webp)$/i;
+
+    var items = [];           // {id, src, blob, blobUrl, alt, title, description, buttonText, buttonUrl, position, isNew}
+    var uid = 0, replaceId = null, dragId = null;
+
+    var $ = function (id) { return document.getElementById(id); };
+    var listEl = $('list'), toastEl = $('toast'), intervalEl = $('interval');
+
+    /* ---------- data awal ---------- */
+    var base = window.IMT_SLIDER || {};
+    intervalEl.value = ((Number(base.interval) || 4500) / 1000).toString();
+    (base.slides || []).forEach(function (s) {
+        items.push({
+            id: ++uid, src: s.src, blob: null, blobUrl: '', isNew: false,
+            alt: s.alt || '', title: s.title || '', description: s.description || '',
+            buttonText: s.buttonText || '', buttonUrl: s.buttonUrl || '', position: s.position || '50% 50%',
+            fit: s.fit === 'contain' ? 'contain' : 'cover'
+        });
+    });
+
+    /* ---------- util ---------- */
+    function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toast.t);
+        toast.t = setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
+    }
+
+    function find(id) { for (var i = 0; i < items.length; i++) if (items[i].id === id) return i; return -1; }
+
+    function validFile(f) { return OK_TYPES.indexOf(f.type) > -1 || OK_EXT.test(f.name); }
+
+    // Perkecil + ubah ke WebP (fallback JPEG) agar ringan, tanpa mengubah proporsi
+    function optimize(file) {
+        return new Promise(function (resolve, reject) {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () {
+                var w = img.naturalWidth, h = img.naturalHeight;
+                var scale = Math.min(1, MAX_WIDTH / w);
+                var cw = Math.round(w * scale), ch = Math.round(h * scale);
+                var c = document.createElement('canvas');
+                c.width = cw; c.height = ch;
+                var ctx = c.getContext('2d');
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, cw, ch);
+                URL.revokeObjectURL(url);
+                c.toBlob(function (b) {
+                    if (b && b.type === 'image/webp') return resolve({ blob: b, ext: 'webp', portrait: ch > cw * 1.1 });
+                    c.toBlob(function (j) {
+                        j ? resolve({ blob: j, ext: 'jpg', portrait: ch > cw * 1.1 }) : reject(new Error('Gagal memproses ' + file.name));
+                    }, 'image/jpeg', QUALITY);
+                }, 'image/webp', QUALITY);
+            };
+            img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Bukan gambar valid: ' + file.name)); };
+            img.src = url;
+        });
+    }
+
+    function fileName(ext) { return 'slide-' + Date.now().toString(36) + '-' + (++uid) + '.' + ext; }
+
+    function nameFromFile(f) { return f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '); }
+
+    /* ---------- tambah / ganti foto ---------- */
+    function addFiles(files) {
+        var all = Array.prototype.slice.call(files);
+        var good = all.filter(validFile);
+        if (all.length !== good.length) toast('Sebagian file dilewati (hanya JPG, JPEG, PNG, WEBP).');
+        if (!good.length) return;
+        var done = 0;
+        good.reduce(function (p, f) {
+            return p.then(function () {
+                return optimize(f).then(function (r) {
+                    var name = fileName(r.ext);
+                    items.push({
+                        id: ++uid, src: 'assets/slider/' + name, name: name,
+                        blob: r.blob, blobUrl: URL.createObjectURL(r.blob), isNew: true,
+                        alt: nameFromFile(f), title: '', description: '', buttonText: '', buttonUrl: '', position: '50% 50%',
+                        fit: r.portrait ? 'contain' : 'cover'
+                    });
+                    done++;
+                }).catch(function (e) { toast(e.message); });
+            });
+        }, Promise.resolve()).then(function () {
+            render();
+            if (done) toast(done + ' foto ditambahkan.');
+        });
+    }
+
+    function replaceFile(id, file) {
+        if (!file || !validFile(file)) { toast('Format harus JPG, JPEG, PNG, atau WEBP.'); return; }
+        optimize(file).then(function (r) {
+            var i = find(id); if (i < 0) return;
+            var it = items[i];
+            if (it.blobUrl) URL.revokeObjectURL(it.blobUrl);
+            var name = fileName(r.ext);
+            it.name = name; it.src = 'assets/slider/' + name;
+            it.blob = r.blob; it.blobUrl = URL.createObjectURL(r.blob); it.isNew = true;
+            it.fit = r.portrait ? 'contain' : it.fit;
+            render(); toast('Foto diganti.');
+        }).catch(function (e) { toast(e.message); });
+    }
+
+    /* ---------- render daftar ---------- */
+    function field(label, node, full) {
+        var d = document.createElement('div');
+        if (full) d.className = 'full';
+        var l = document.createElement('label'); l.textContent = label;
+        d.appendChild(l); d.appendChild(node);
+        return d;
+    }
+
+    function input(type, value, onChange, placeholder) {
+        var n = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+        if (type !== 'textarea') n.type = type;
+        n.value = value || '';
+        if (placeholder) n.placeholder = placeholder;
+        n.addEventListener('input', function () { onChange(n.value); });
+        return n;
+    }
+
+    function btn(text, cls, onClick, disabled) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn small ' + (cls || ''); b.textContent = text;
+        b.disabled = !!disabled;
+        b.addEventListener('click', onClick);
+        return b;
+    }
+
+    function move(id, dir) {
+        var i = find(id), j = i + dir;
+        if (i < 0 || j < 0 || j >= items.length) return;
+        var t = items[i]; items[i] = items[j]; items[j] = t;
+        render();
+    }
+
+    function remove(id) {
+        var i = find(id); if (i < 0) return;
+        if (!confirm('Hapus slide ini dari slider?')) return;
+        if (items[i].blobUrl) URL.revokeObjectURL(items[i].blobUrl);
+        items.splice(i, 1);
+        render(); toast('Slide dihapus.');
+    }
+
+    var POSITIONS = [
+        ['50% 50%', 'Tengah'], ['50% 0%', 'Atas'], ['50% 100%', 'Bawah'],
+        ['0% 50%', 'Kiri'], ['100% 50%', 'Kanan'],
+        ['25% 50%', 'Kiri-tengah'], ['75% 50%', 'Kanan-tengah'],
+        ['50% 25%', 'Atas-tengah'], ['50% 75%', 'Bawah-tengah']
+    ];
+
+    function render() {
+        listEl.innerHTML = '';
+        if (!items.length) {
+            var li = document.createElement('li');
+            li.className = 'empty';
+            li.textContent = 'Belum ada slide. Klik "Tambah Foto" untuk memulai. (Jika kosong, slider disembunyikan di website.)';
+            listEl.appendChild(li);
+            return;
+        }
+        items.forEach(function (it, idx) {
+            var li = document.createElement('li');
+            li.className = 'card';
+            li.draggable = true;
+            li.dataset.id = it.id;
+
+            var handle = document.createElement('div');
+            handle.className = 'handle';
+            handle.title = 'Seret untuk mengubah urutan';
+            handle.innerHTML = '⋮⋮<span class="no">' + (idx + 1) + '</span>';
+
+            var thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            var im = document.createElement('img');
+            im.src = it.blobUrl || it.src; im.alt = ''; im.draggable = false;
+            im.style.objectPosition = it.position || '50% 50%';
+            im.style.objectFit = it.fit === 'contain' ? 'contain' : 'cover';
+            thumb.appendChild(im);
+            if (it.isNew) { var tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = 'Baru'; thumb.appendChild(tag); }
+
+            var fields = document.createElement('div');
+            fields.className = 'fields';
+            fields.appendChild(field('Judul', input('text', it.title, function (v) { it.title = v; })));
+            fields.appendChild(field('Teks alternatif gambar (aksesibilitas)', input('text', it.alt, function (v) { it.alt = v; })));
+            fields.appendChild(field('Deskripsi', input('textarea', it.description, function (v) { it.description = v; }), true));
+            fields.appendChild(field('Teks tombol (opsional)', input('text', it.buttonText, function (v) { it.buttonText = v; }, 'mis. Register Now')));
+            fields.appendChild(field('Link tombol (opsional)', input('url', it.buttonUrl, function (v) { it.buttonUrl = v; }, 'https://...')));
+
+            var sel = document.createElement('select');
+            POSITIONS.forEach(function (p) {
+                var o = document.createElement('option');
+                o.value = p[0]; o.textContent = p[1] + ' (' + p[0] + ')';
+                if (p[0] === it.position) o.selected = true;
+                sel.appendChild(o);
+            });
+            if (!POSITIONS.some(function (p) { return p[0] === it.position; })) {
+                var custom = document.createElement('option');
+                custom.value = it.position; custom.textContent = 'Kustom (' + it.position + ')'; custom.selected = true;
+                sel.appendChild(custom);
+            }
+            sel.addEventListener('change', function () { it.position = sel.value; im.style.objectPosition = sel.value; });
+            fields.appendChild(field('Fokus gambar (object-position, untuk mode Penuh)', sel, true));
+
+            var fitSel = document.createElement('select');
+            [['cover', 'Penuh – memenuhi slider (bisa terpotong), cocok untuk foto landscape'],
+             ['contain', 'Utuh – tampil lengkap tanpa dipotong + klik untuk perbesar, cocok untuk poster/flyer']].forEach(function (o) {
+                var op = document.createElement('option');
+                op.value = o[0]; op.textContent = o[1]; if (it.fit === o[0]) op.selected = true;
+                fitSel.appendChild(op);
+            });
+            fitSel.addEventListener('change', function () { it.fit = fitSel.value; im.style.objectFit = it.fit === 'contain' ? 'contain' : 'cover'; });
+            fields.appendChild(field('Tampilan gambar', fitSel, true));
+
+            var actions = document.createElement('div');
+            actions.className = 'actions';
+            actions.appendChild(btn('↑ Naik', '', function () { move(it.id, -1); }, idx === 0));
+            actions.appendChild(btn('↓ Turun', '', function () { move(it.id, 1); }, idx === items.length - 1));
+            actions.appendChild(btn('Ganti Foto', '', function () { replaceId = it.id; $('file-replace').value = ''; $('file-replace').click(); }));
+            actions.appendChild(btn('Hapus', 'danger', function () { remove(it.id); }));
+            fields.appendChild(actions);
+
+            li.appendChild(handle); li.appendChild(thumb); li.appendChild(fields);
+
+            // drag & drop urutan
+            li.addEventListener('dragstart', function (e) {
+                if (e.target !== li) return;
+                dragId = it.id; li.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', String(it.id)); } catch (_) {}
+            });
+            li.addEventListener('dragend', function () { dragId = null; li.classList.remove('dragging'); clearTargets(); });
+            li.addEventListener('dragover', function (e) {
+                if (dragId === null) return;
+                e.preventDefault(); clearTargets(); li.classList.add('drop-target');
+            });
+            li.addEventListener('drop', function (e) {
+                if (dragId === null) return;
+                e.preventDefault();
+                var from = find(dragId), to = find(it.id);
+                if (from > -1 && to > -1 && from !== to) {
+                    var m = items.splice(from, 1)[0]; items.splice(to, 0, m);
+                }
+                dragId = null; render();
+            });
+
+            listEl.appendChild(li);
+        });
+    }
+
+    function clearTargets() {
+        Array.prototype.forEach.call(listEl.querySelectorAll('.drop-target'), function (n) { n.classList.remove('drop-target'); });
+    }
+
+    /* ---------- ekspor ---------- */
+    function buildJs() {
+        var sec = Number(intervalEl.value);
+        if (!isFinite(sec) || sec < 2) sec = 4.5;
+        var data = {
+            interval: Math.round(sec * 1000),
+            slides: items.map(function (it) {
+                return {
+                    src: it.src, alt: it.alt.trim(), title: it.title.trim(), description: it.description.trim(),
+                    buttonText: it.buttonText.trim(), buttonUrl: it.buttonUrl.trim(), position: it.position || '50% 50%',
+                    fit: it.fit === 'contain' ? 'contain' : 'cover'
+                };
+            })
+        };
+        return '/* Data Image Slider - dibuat oleh admin-slider.html (' + new Date().toISOString().slice(0, 10) + ')\n' +
+               '   Urutan slide = urutan array. Lihat petunjuk di admin-slider.html. */\n' +
+               'window.IMT_SLIDER = ' + JSON.stringify(data, null, 2) + ';\n';
+    }
+
+    function download(blob, name) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    }
+
+    // --- ZIP sederhana (tanpa kompresi, tanpa library) ---
+    var crcTable = (function () {
+        var t = new Uint32Array(256);
+        for (var n = 0; n < 256; n++) {
+            var c = n;
+            for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            t[n] = c >>> 0;
+        }
+        return t;
+    })();
+
+    function crc32(bytes) {
+        var c = 0xFFFFFFFF;
+        for (var i = 0; i < bytes.length; i++) c = crcTable[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+        return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function makeZip(files) {
+        var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+        var d = new Date();
+        var time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+        var date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+
+        files.forEach(function (f) {
+            var name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+            var lh = new DataView(new ArrayBuffer(30));
+            lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+            lh.setUint16(8, 0, true); lh.setUint16(10, time, true); lh.setUint16(12, date, true);
+            lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+            lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+            parts.push(lh.buffer, name, f.data);
+
+            var ch = new DataView(new ArrayBuffer(46));
+            ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+            ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true); ch.setUint16(12, time, true); ch.setUint16(14, date, true);
+            ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+            ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+            central.push(ch.buffer, name);
+            offset += 30 + name.length + size;
+        });
+
+        var cdSize = 0;
+        central.forEach(function (c) { cdSize += c.byteLength !== undefined ? c.byteLength : c.length; });
+        var end = new DataView(new ArrayBuffer(22));
+        end.setUint32(0, 0x06054b50, true);
+        end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+        end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+        return new Blob(parts.concat(central, [end.buffer]), { type: 'application/zip' });
+    }
+
+    function toBytes(blob) {
+        return new Promise(function (res, rej) {
+            var r = new FileReader();
+            r.onload = function () { res(new Uint8Array(r.result)); };
+            r.onerror = function () { rej(r.error); };
+            r.readAsArrayBuffer(blob);
+        });
+    }
+
+    function exportZip() {
+        var enc = new TextEncoder();
+        var files = [{ name: 'assets/slider/slides.js', data: enc.encode(buildJs()) }];
+        var newOnes = items.filter(function (it) { return it.blob; });
+        Promise.all(newOnes.map(function (it) {
+            return toBytes(it.blob).then(function (bytes) {
+                files.push({ name: 'assets/slider/' + it.name, data: bytes });
+            });
+        })).then(function () {
+            download(makeZip(files), 'slider-update.zip');
+            toast('ZIP diunduh (' + files.length + ' file).');
+        }).catch(function (e) { toast('Gagal membuat ZIP: ' + e.message); });
+    }
+
+    /* ---------- event ---------- */
+    $('btn-add').addEventListener('click', function () { $('file-add').value = ''; $('file-add').click(); });
+    $('file-add').addEventListener('change', function (e) { addFiles(e.target.files); });
+    $('file-replace').addEventListener('change', function (e) { if (replaceId !== null) replaceFile(replaceId, e.target.files[0]); });
+
+    var drop = $('drop');
+    drop.addEventListener('click', function () { $('btn-add').click(); });
+    drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('btn-add').click(); } });
+    ['dragenter', 'dragover'].forEach(function (t) {
+        drop.addEventListener(t, function (e) { if (dragId !== null) return; e.preventDefault(); drop.classList.add('over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (t) {
+        drop.addEventListener(t, function () { drop.classList.remove('over'); });
+    });
+    drop.addEventListener('drop', function (e) {
+        if (dragId !== null) return;
+        e.preventDefault();
+        if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    });
+
+    $('btn-js').addEventListener('click', function () {
+        download(new Blob([buildJs()], { type: 'text/javascript' }), 'slides.js');
+        toast('slides.js diunduh. Letakkan di assets/slider/.');
+    });
+    $('btn-zip').addEventListener('click', exportZip);
+
+    render();
+})();
+</script>
+</body>
+</html>
